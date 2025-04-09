@@ -29,6 +29,7 @@ model Order {
   OrderItems OrderItems[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  @@map("orders")
 }
 
 model OrderItems {
@@ -40,4 +41,5 @@ model OrderItems {
   Order     Order? @relation(fields: [orderId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@map("orders_items")
 }

@@ -88,43 +88,45 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
 
 
     } catch (error) {
+      console.error('Error al crear la orden:', error); // Esto mostrará el error completo en consola
+
       throw new RpcException({
         status: HttpStatus.BAD_REQUEST,
-        message: 'Check logs'
-      })
+        message: error?.message || 'Error inesperado',
+      });
     }
 
   }
 
   async findAll(orderPaginationDto: OrderPaginationDto) {
     const { page = 1, limit = 10, status } = orderPaginationDto;
-  
+
     const totalOrders = await this.order.count({
       where: { status },
     });
-  
+
     if (totalOrders === 0) {
       throw new RpcException({
         status: HttpStatus.NOT_FOUND,
         message: `No orders found with status '${status}'`,
       });
     }
-  
+
     const lastPage = Math.ceil(totalOrders / limit);
-  
+
     if (page > lastPage) {
       throw new RpcException({
         status: HttpStatus.NOT_FOUND,
         message: `Page #${page} not found`,
       });
     }
-  
+
     const orders = await this.order.findMany({
       skip: (page - 1) * limit,
       take: limit,
       where: { status },
     });
-  
+
     return {
       data: orders,
       meta: {
@@ -136,7 +138,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       },
     };
   }
-  
+
   async findOne(id: string) {
 
     const order = await this.order.findFirst({
@@ -159,21 +161,21 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       });
     }
 
-    const productIds = order.OrderItems.map( orderItem =>  orderItem.productId );
+    const productIds = order.OrderItems.map(orderItem => orderItem.productId);
     const products: any[] = await this.ValidateProduct(productIds);
 
 
     const { OrderItems, ...rest } = order;
 
-      return {
-        ...rest,
-        OrderItem: OrderItems.map((orderItem) => ({
-          productId: orderItem.productId,
-          name: products.find(product => product.id === orderItem.productId)?.name || null,
-          price: orderItem.price,
-          quantity: orderItem.quantity,
-        })),
-      };
+    return {
+      ...rest,
+      OrderItem: OrderItems.map((orderItem) => ({
+        productId: orderItem.productId,
+        name: products.find(product => product.id === orderItem.productId)?.name || null,
+        price: orderItem.price,
+        quantity: orderItem.quantity,
+      })),
+    };
 
   }
 
@@ -201,7 +203,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
 
   }
 
-  async ValidateProduct(productIds){
+  async ValidateProduct(productIds) {
     return await firstValueFrom(
       this.client.send({ cmd: 'validate_products' }, productIds)
     )
